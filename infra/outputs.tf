@@ -37,3 +37,13 @@ output "dynamodb_tables" {
     agent_monitoring   = aws_dynamodb_table.agent_monitoring.name
   }
 }
+
+output "bedrock_readonly_role_arn" {
+  description = "ARN of the Bedrock read-only IAM role"
+  value       = aws_iam_role.bedrock_readonly.arn
+}
+
+output "bedrock_readonly_policy_arn" {
+  description = "ARN of the Bedrock read-only IAM policy"
+  value       = aws_iam_policy.bedrock_readonly_policy.arn
+}

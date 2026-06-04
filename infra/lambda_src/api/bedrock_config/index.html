@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bedrock Configuration</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --surface: #fffaf2;
+      --ink: #1f1d1a;
+      --accent: #0f766e;
+      --accent-2: #b45309;
+      --muted: #6b6157;
+      --ok: #166534;
+      --ok-bg: #dcfce7;
+      --warn: #9a3412;
+      --warn-bg: #fff7ed;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --border: #d8ccbd;
+      --bedrock: #6d28d9;
+      --bedrock-bg: #f5f3ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 20% 0%, #f0ebff 0%, #f4f1ea 45%, #ebe5da 100%);
+      min-height: 100vh;
+    }
+
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 16px 56px; }
+
+    /* ── Hero ── */
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(130deg, #f5f3ff 0%, #fffaf2 60%, #f3ece2 100%);
+      border-radius: 18px;
+      padding: 24px 28px;
+      box-shadow: 0 18px 40px rgba(53, 38, 19, 0.08);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .hero-text h1 { margin: 0 0 6px; font-size: clamp(1.4rem, 3vw, 2rem); }
+    .hero-text p  { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+    .hero-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font: 600 0.85rem "Segoe UI", sans-serif;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.12s;
+      text-decoration: none;
+    }
+    .btn:hover  { transform: translateY(-1px); opacity: 0.92; }
+    .btn:active { transform: translateY(0); }
+    .btn-primary   { background: var(--accent); color: #f8fffe; }
+    .btn-secondary { background: #ded3c3; color: #2b241d; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 7px 14px;
+      font: 600 0.82rem "Segoe UI", sans-serif;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .tab:hover  { border-color: var(--bedrock); color: var(--bedrock); }
+    .tab.active { background: var(--bedrock); border-color: var(--bedrock); color: #fff; }
+
+    /* ── Section card ── */
+    .section {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .section.visible { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font: 600 0.75rem "Segoe UI", sans-serif;
+    }
+    .badge-purple { background: var(--bedrock-bg); color: var(--bedrock); }
+    .badge-ok     { background: var(--ok-bg);      color: var(--ok); }
+    .badge-warn   { background: var(--warn-bg);     color: var(--warn); }
+    .badge-muted  { background: #f0ede8;            color: var(--muted); }
+
+    /* ── Search ── */
+    .search-bar {
+      width: 100%;
+      max-width: 340px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 0.88rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #f3ede4;
+      color: var(--muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      word-break: break-word;
+    }
+    tr:hover td { background: #faf6f0; }
+    tr:last-child td { border-bottom: none; }
+
+    .mono { font-family: "Cascadia Code", "Consolas", monospace; font-size: 0.82rem; }
+
+    /* ── Sub-table (aliases / data sources inside expanded row) ── */
+    .sub-table { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .sub-table table { font-size: 0.8rem; }
+    .sub-table th { background: #ede8df; padding: 6px 8px; }
+    .sub-table td { padding: 6px 8px; }
+
+    /* ── Status pills ── */
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 9px;
+      font: 500 0.75rem "Segoe UI", sans-serif;
+      white-space: nowrap;
+    }
+    .pill-ok     { background: var(--ok-bg);     color: var(--ok); }
+    .pill-warn   { background: var(--warn-bg);   color: var(--warn); }
+    .pill-danger { background: var(--danger-bg); color: var(--danger); }
+    .pill-muted  { background: #f0ede8;          color: var(--muted); }
+    .pill-purple { background: var(--bedrock-bg); color: var(--bedrock); }
+
+    /* ── Empty / error states ── */
+    .empty {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .error-box {
+      background: var(--danger-bg);
+      border: 1px solid #fca5a5;
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--danger);
+      font-size: 0.88rem;
+      font-family: "Cascadia Code", "Consolas", monospace;
+    }
+
+    /* ── JSON viewer (for logging config) ── */
+    .json-block {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 10px;
+      padding: 16px;
+      font: 0.82rem "Cascadia Code", "Consolas", monospace;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
+    }
+
+    /* ── Expandable row ── */
+    .expand-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .expand-btn:hover { border-color: var(--bedrock); color: var(--bedrock); }
+
+    .expanded-content { display: none; }
+    .expanded-content.open { display: table-row; }
+    .expanded-content td { padding-bottom: 14px; }
+
+    @media (max-width: 640px) {
+      .hero { flex-direction: column; }
+      .hero-meta { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-text">
+      <h1>&#129504; Bedrock Configuration</h1>
+      <p>Live snapshot of all Amazon Bedrock services and configurations in this account.</p>
+    </div>
+    <div class="hero-meta">
+      <span id="region-badge"></span>
+      <span id="fetched-at"></span>
+      <button class="btn btn-primary" onclick="location.reload()">&#8635; Refresh</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- Sections rendered by JS -->
+  <div id="content"></div>
+
+</div>
+
+<script>
+(function () {
+  const RAW = __BEDROCK_DATA__;
+
+  /* ── Helpers ──────────────────────────────────────────────────── */
+  function esc(v) {
+    if (v == null) return '<span style="color:var(--muted)">—</span>';
+    return String(v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function statusPill(s) {
+    if (!s) return '';
+    const lo = s.toLowerCase();
+    let cls = 'pill-muted';
+    if (/ready|active|enabled|available|prepared/.test(lo)) cls = 'pill-ok';
+    else if (/creating|updating|syncing|versioning/.test(lo))  cls = 'pill-warn';
+    else if (/failed|delete|error/.test(lo)) cls = 'pill-danger';
+    return `<span class="pill ${cls}">${esc(s)}</span>`;
+  }
+
+  function fmtDate(v) {
+    if (!v) return '—';
+    try { return new Date(v).toLocaleString(); } catch { return esc(v); }
+  }
+
+  function count(arr) {
+    if (!Array.isArray(arr)) return '?';
+    return arr.length;
+  }
+
+  function errorBox(obj) {
+    return `<div class="error-box">&#9888; ${esc(obj.error)}</div>`;
+  }
+
+  function emptyState(msg) {
+    return `<div class="empty">&#128204; ${msg}</div>`;
+  }
+
+  function subTable(headers, rows, rowFn) {
+    if (!rows || rows.length === 0) return '<em style="color:var(--muted);font-size:0.8rem">None</em>';
+    return `<div class="sub-table"><table>
+      <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(rowFn).join('')}</tbody>
+    </table></div>`;
+  }
+
+  /* ── Section builders ──────────────────────────────────────────── */
+
+  function buildFoundationModels(models) {
+    if (!Array.isArray(models)) return errorBox(models);
+    if (!models.length) return emptyState('No foundation models found.');
+
+    // Group by provider
+    const byProvider = {};
+    models.forEach(m => {
+      const p = m.providerName || 'Unknown';
+      (byProvider[p] = byProvider[p] || []).push(m);
+    });
+
+    let html = `<p style="color:var(--muted);font-size:0.85rem;margin-top:0">
+      ${models.length} models across ${Object.keys(byProvider).length} providers.
+      Filter uses model name, ID, or modality.
+    </p>
+    <input class="search-bar" placeholder="Search models..." oninput="filterTable(this,'fm-table')">
+    <div class="table-wrap" style="margin-top:10px">
+    <table id="fm-table">
+      <thead><tr>
+        <th>Model ID</th><th>Name</th><th>Provider</th>
+        <th>Input</th><th>Output</th><th>Lifecycle</th><th>On-demand</th>
+      </tr></thead>
+      <tbody>`;
+
+    models.forEach(m => {
+      const inputs  = (m.inputModalities  || []).join(', ');
+      const outputs = (m.outputModalities || []).join(', ');
+      const lc = m.modelLifecycle?.status || '';
+      html += `<tr>
+        <td class="mono">${esc(m.modelId)}</td>
+        <td>${esc(m.modelName)}</td>
+        <td>${esc(m.providerName)}</td>
+        <td>${esc(inputs)}</td>
+        <td>${esc(outputs)}</td>
+        <td>${statusPill(lc)}</td>
+        <td>${m.inferenceTypesSupported?.includes('ON_DEMAND') ? '&#10003;' : ''}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function buildCustomModels(models) {
+    if (!Array.isArray(models)) return errorBox(models);
+    if (!models.length) return emptyState('No custom models found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Model ARN</th><th>Base Model</th><th>Created</th></tr></thead><tbody>`;
+    models.forEach(m => {
+      html += `<tr>
+        <td>${esc(m.modelName)}</td>
+        <td class="mono" style="font-size:0.75rem">${esc(m.modelArn)}</td>
+        <td class="mono">${esc(m.baseModelId)}</td>
+        <td>${fmtDate(m.creationTime)}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildAgents(agents) {
+    if (!Array.isArray(agents)) return errorBox(agents);
+    if (!agents.length) return emptyState('No agents found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Agent ID</th><th>Status</th>
+        <th>Updated</th><th>Aliases</th>
+      </tr></thead><tbody>`;
+
+    agents.forEach((a, i) => {
+      const rowId = `agent-expand-${i}`;
+      const aliases = Array.isArray(a.aliases) ? a.aliases : [];
+      html += `<tr>
+        <td><strong>${esc(a.agentName)}</strong></td>
+        <td class="mono">${esc(a.agentId)}</td>
+        <td>${statusPill(a.agentStatus)}</td>
+        <td>${fmtDate(a.lastUpdatedAt)}</td>
+        <td>
+          ${aliases.length > 0
+            ? `<button class="expand-btn" onclick="toggleExpand('${rowId}')">
+                &#9660; ${aliases.length} alias${aliases.length !== 1 ? 'es' : ''}
+               </button>`
+            : '<span style="color:var(--muted);font-size:0.8rem">None</span>'}
+        </td>
+      </tr>`;
+
+      if (aliases.length > 0) {
+        html += `<tr id="${rowId}" class="expanded-content">
+          <td colspan="5">
+            ${subTable(
+              ['Alias Name', 'Alias ID', 'Status', 'Updated'],
+              aliases,
+              al => `<tr>
+                <td>${esc(al.aliasName || al.agentAliasName)}</td>
+                <td class="mono">${esc(al.aliasId || al.agentAliasId)}</td>
+                <td>${statusPill(al.aliasStatus || al.agentAliasStatus)}</td>
+                <td>${fmtDate(al.updatedAt || al.lastUpdatedAt)}</td>
+              </tr>`
+            )}
+          </td>
+        </tr>`;
+      }
+    });
+
+    return html + '</tbody></table></div>';
+  }
+
+  function buildKnowledgeBases(kbs) {
+    if (!Array.isArray(kbs)) return errorBox(kbs);
+    if (!kbs.length) return emptyState('No knowledge bases found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>KB ID</th><th>Status</th><th>Updated</th><th>Data Sources</th>
+      </tr></thead><tbody>`;
+
+    kbs.forEach((kb, i) => {
+      const rowId = `kb-expand-${i}`;
+      const ds = Array.isArray(kb.data_sources) ? kb.data_sources : [];
+      html += `<tr>
+        <td><strong>${esc(kb.name)}</strong></td>
+        <td class="mono">${esc(kb.knowledgeBaseId)}</td>
+        <td>${statusPill(kb.status)}</td>
+        <td>${fmtDate(kb.updatedAt)}</td>
+        <td>
+          ${ds.length > 0
+            ? `<button class="expand-btn" onclick="toggleExpand('${rowId}')">
+                &#9660; ${ds.length} source${ds.length !== 1 ? 's' : ''}
+               </button>`
+            : '<span style="color:var(--muted);font-size:0.8rem">None</span>'}
+        </td>
+      </tr>`;
+
+      if (ds.length > 0) {
+        html += `<tr id="${rowId}" class="expanded-content">
+          <td colspan="5">
+            ${subTable(
+              ['Source Name', 'Source ID', 'Status', 'Updated'],
+              ds,
+              d => `<tr>
+                <td>${esc(d.name)}</td>
+                <td class="mono">${esc(d.dataSourceId)}</td>
+                <td>${statusPill(d.status)}</td>
+                <td>${fmtDate(d.updatedAt)}</td>
+              </tr>`
+            )}
+          </td>
+        </tr>`;
+      }
+    });
+
+    return html + '</tbody></table></div>';
+  }
+
+  function buildGuardrails(guardrails) {
+    if (!Array.isArray(guardrails)) return errorBox(guardrails);
+    if (!guardrails.length) return emptyState('No guardrails found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Guardrail ID</th><th>Version</th><th>Status</th><th>Updated</th>
+      </tr></thead><tbody>`;
+    guardrails.forEach(g => {
+      html += `<tr>
+        <td><strong>${esc(g.name)}</strong></td>
+        <td class="mono">${esc(g.id)}</td>
+        <td>${esc(g.version)}</td>
+        <td>${statusPill(g.status)}</td>
+        <td>${fmtDate(g.updatedAt)}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildFlows(flows) {
+    if (!Array.isArray(flows)) return errorBox(flows);
+    if (!flows.length) return emptyState('No flows found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Flow ID</th><th>Status</th><th>Updated</th><th>Aliases</th>
+      </tr></thead><tbody>`;
+    flows.forEach((f, i) => {
+      const rowId = `flow-expand-${i}`;
+      const aliases = Array.isArray(f.aliases) ? f.aliases : [];
+      html += `<tr>
+        <td><strong>${esc(f.name)}</strong></td>
+        <td class="mono">${esc(f.id)}</td>
+        <td>${statusPill(f.status)}</td>
+        <td>${fmtDate(f.updatedAt)}</td>
+        <td>
+          ${aliases.length > 0
+            ? `<button class="expand-btn" onclick="toggleExpand('${rowId}')">
+                &#9660; ${aliases.length} alias${aliases.length !== 1 ? 'es' : ''}
+               </button>`
+            : '<span style="color:var(--muted);font-size:0.8rem">None</span>'}
+        </td>
+      </tr>`;
+      if (aliases.length > 0) {
+        html += `<tr id="${rowId}" class="expanded-content">
+          <td colspan="5">
+            ${subTable(
+              ['Alias Name', 'Alias ID', 'Status', 'Updated'],
+              aliases,
+              al => `<tr>
+                <td>${esc(al.name)}</td>
+                <td class="mono">${esc(al.id)}</td>
+                <td>${statusPill(al.status)}</td>
+                <td>${fmtDate(al.updatedAt)}</td>
+              </tr>`
+            )}
+          </td>
+        </tr>`;
+      }
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildPrompts(prompts) {
+    if (!Array.isArray(prompts)) return errorBox(prompts);
+    if (!prompts.length) return emptyState('No prompts found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Prompt ID</th><th>Version</th><th>Updated</th>
+      </tr></thead><tbody>`;
+    prompts.forEach(p => {
+      html += `<tr>
+        <td><strong>${esc(p.name)}</strong></td>
+        <td class="mono">${esc(p.id)}</td>
+        <td>${esc(p.version)}</td>
+        <td>${fmtDate(p.updatedAt || p.lastUpdatedAt)}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildProvisionedThroughputs(pts) {
+    if (!Array.isArray(pts)) return errorBox(pts);
+    if (!pts.length) return emptyState('No provisioned throughputs found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>ARN</th><th>Model Units</th><th>Status</th><th>Commitment</th><th>Expires</th>
+      </tr></thead><tbody>`;
+    pts.forEach(pt => {
+      html += `<tr>
+        <td><strong>${esc(pt.provisionedModelName)}</strong></td>
+        <td class="mono" style="font-size:0.75rem">${esc(pt.provisionedModelArn)}</td>
+        <td>${esc(pt.modelUnits)}</td>
+        <td>${statusPill(pt.status)}</td>
+        <td>${esc(pt.commitmentDuration)}</td>
+        <td>${fmtDate(pt.commitmentExpirationTime)}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildInferenceProfiles(profiles) {
+    if (!Array.isArray(profiles)) return errorBox(profiles);
+    if (!profiles.length) return emptyState('No inference profiles found.');
+    let html = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Profile ID</th><th>Type</th><th>Status</th><th>Created</th>
+      </tr></thead><tbody>`;
+    profiles.forEach(p => {
+      html += `<tr>
+        <td><strong>${esc(p.inferenceProfileName)}</strong></td>
+        <td class="mono">${esc(p.inferenceProfileId)}</td>
+        <td><span class="pill pill-purple">${esc(p.type)}</span></td>
+        <td>${statusPill(p.status)}</td>
+        <td>${fmtDate(p.createdAt)}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function buildLoggingConfig(cfg) {
+    if (cfg && cfg.error) return errorBox(cfg);
+    return `<div class="json-block">${esc(JSON.stringify(cfg || {}, null, 2))}</div>`;
+  }
+
+  /* ── Tab / section registry ─────────────────────────────────────── */
+  const SECTIONS = [
+    {
+      id: 'foundation_models',
+      label: '&#127758; Foundation Models',
+      builder: buildFoundationModels,
+      dataKey: 'foundation_models',
+    },
+    {
+      id: 'agents',
+      label: '&#129504; Agents',
+      builder: buildAgents,
+      dataKey: 'agents',
+    },
+    {
+      id: 'knowledge_bases',
+      label: '&#128218; Knowledge Bases',
+      builder: buildKnowledgeBases,
+      dataKey: 'knowledge_bases',
+    },
+    {
+      id: 'guardrails',
+      label: '&#128737; Guardrails',
+      builder: buildGuardrails,
+      dataKey: 'guardrails',
+    },
+    {
+      id: 'flows',
+      label: '&#9881; Flows',
+      builder: buildFlows,
+      dataKey: 'flows',
+    },
+    {
+      id: 'prompts',
+      label: '&#128195; Prompts',
+      builder: buildPrompts,
+      dataKey: 'prompts',
+    },
+    {
+      id: 'inference_profiles',
+      label: '&#128200; Inference Profiles',
+      builder: buildInferenceProfiles,
+      dataKey: 'inference_profiles',
+    },
+    {
+      id: 'provisioned_throughputs',
+      label: '&#9889; Provisioned Throughput',
+      builder: buildProvisionedThroughputs,
+      dataKey: 'provisioned_throughputs',
+    },
+    {
+      id: 'custom_models',
+      label: '&#128736; Custom Models',
+      builder: buildCustomModels,
+      dataKey: 'custom_models',
+    },
+    {
+      id: 'logging_config',
+      label: '&#128196; Invocation Logging',
+      builder: buildLoggingConfig,
+      dataKey: 'logging_config',
+    },
+  ];
+
+  /* ── Render tabs + sections ─────────────────────────────────────── */
+  function badgeForSection(s) {
+    const d = RAW[s.dataKey];
+    if (!d) return '';
+    if (d && d.error) return `<span class="badge badge-muted" style="margin-left:4px">err</span>`;
+    if (Array.isArray(d)) {
+      const cls = d.length ? 'badge-purple' : 'badge-muted';
+      return `<span class="badge ${cls}" style="margin-left:4px">${d.length}</span>`;
+    }
+    return '';
+  }
+
+  const tabsEl    = document.getElementById('tabs');
+  const contentEl = document.getElementById('content');
+
+  SECTIONS.forEach((sec, idx) => {
+    // Tab button
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (idx === 0 ? ' active' : '');
+    btn.innerHTML = sec.label + badgeForSection(sec);
+    btn.onclick = () => activateTab(sec.id);
+    tabsEl.appendChild(btn);
+
+    // Section div
+    const div = document.createElement('div');
+    div.className = 'section' + (idx === 0 ? ' visible' : '');
+    div.id = 'section-' + sec.id;
+
+    const data = RAW[sec.dataKey];
+    const countBadge = Array.isArray(data)
+      ? `<span class="badge badge-purple">${data.length}</span>`
+      : (data && data.error ? `<span class="badge badge-muted">Error</span>` : '');
+
+    div.innerHTML = `
+      <div class="section-header">
+        <h2 class="section-title">${sec.label} ${countBadge}</h2>
+      </div>
+      ${sec.builder(data)}
+    `;
+    contentEl.appendChild(div);
+  });
+
+  function activateTab(id) {
+    document.querySelectorAll('.tab').forEach((b, i) => {
+      b.classList.toggle('active', SECTIONS[i].id === id);
+    });
+    document.querySelectorAll('.section').forEach(s => {
+      s.classList.toggle('visible', s.id === 'section-' + id);
+    });
+  }
+
+  /* ── Expand/collapse row ─────────────────────────────────────────── */
+  window.toggleExpand = function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('open');
+  };
+
+  /* ── Table search filter ─────────────────────────────────────────── */
+  window.filterTable = function(input, tableId) {
+    const q = input.value.toLowerCase();
+    document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  };
+
+  /* ── Header meta ─────────────────────────────────────────────────── */
+  document.getElementById('region-badge').textContent = '&#127757; ' + (RAW.region || '');
+  document.getElementById('fetched-at').textContent =
+    'Fetched: ' + (RAW.fetched_at ? new Date(RAW.fetched_at).toLocaleString() : '');
+
+})();
+</script>
+</body>
+</html>

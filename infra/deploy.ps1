@@ -3,6 +3,7 @@ param(
     [string]$Environment = "dev",
     [string]$Region = "eu-west-1",
     [string]$StateKey = "airisk/dev/terraform.tfstate",
+    [string]$CloudtrailBucket = "ai-risk-platform-prod-cloudtrail-586794455900",
     [switch]$AutoApprove
 )
 
@@ -24,7 +25,12 @@ terraform init -reconfigure `
 if ($LASTEXITCODE -ne 0) { throw "terraform init failed with exit code $LASTEXITCODE" }
 
 $planFile = "tfplan"
-terraform plan -var "environment=$Environment" -var "aws_region=$Region" -out $planFile
+$cloudtrailVar = if ($CloudtrailBucket -ne "") { "-var=cloudtrail_s3_bucket_name=$CloudtrailBucket" } else { "" }
+if ($cloudtrailVar -ne "") {
+    terraform plan -var "environment=$Environment" -var "aws_region=$Region" $cloudtrailVar -out $planFile
+} else {
+    terraform plan -var "environment=$Environment" -var "aws_region=$Region" -out $planFile
+}
 if ($LASTEXITCODE -ne 0) { throw "terraform plan failed with exit code $LASTEXITCODE" }
 
 if ($AutoApprove) {

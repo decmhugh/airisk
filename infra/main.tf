@@ -68,6 +68,14 @@ locals {
       route_key = "POST /third-party/proxy"
       handler   = "third_party_proxy.index.lambda_handler"
     }
+    bedrock_config = {
+      route_key = "GET /bedrock-config"
+      handler   = "bedrock_config.index.lambda_handler"
+    }
+    bedrock_logs = {
+      route_key = "GET /bedrock-logs"
+      handler   = "bedrock_logs.index.lambda_handler"
+    }
   }
 }
 
@@ -237,6 +245,18 @@ data "aws_iam_policy_document" "platform_policy_doc" {
     actions   = ["secretsmanager:GetSecretValue"]
     resources = var.third_party_api_secret_arn == "" ? ["*"] : [var.third_party_api_secret_arn]
   }
+
+  statement {
+    sid = "S3LogsRead"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.log_bucket}",
+      "arn:aws:s3:::${var.log_bucket}/*",
+    ]
+  }
 }
 
 resource "aws_iam_policy" "platform_policy" {
@@ -270,6 +290,8 @@ resource "aws_lambda_function" "api_endpoint" {
       BEDROCK_MODEL_ID       = var.bedrock_model_id
       THIRD_PARTY_SECRET     = var.third_party_api_secret_arn
       AWS_ACCOUNT_REGION     = var.aws_region
+      LOG_BUCKET             = var.log_bucket
+      LOG_PREFIX             = var.log_prefix
     }
   }
 

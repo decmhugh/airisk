@@ -67,3 +67,15 @@ variable "cloudtrail_s3_bucket_name" {
   type        = string
   default     = ""
 }
+
+variable "log_bucket" {
+  description = "S3 bucket that holds Bedrock model invocation logs"
+  type        = string
+  default     = "dmh-kb-docs"
+}
+
+variable "log_prefix" {
+  description = "S3 key prefix for Bedrock invocation logs (without trailing slash)"
+  type        = string
+  default     = "airisk/AWSLogs/586794455900/BedrockModelInvocationLogs/eu-west-1"
+}
