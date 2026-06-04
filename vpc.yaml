@@ -1,0 +1,388 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >-
+  This template creates a VPC infrastructure for a multi-AZ, multi-subnet 
+  deployment of a workload on AWS. It creates 1 public subnet and 1 private
+  subnet for each availability zone. NAT gateways in the public subnet for 
+  each AZ.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPCName
+          - Environment
+          - VPCCIDR
+          - PublicSubnetACIDR
+          - PublicSubnetBCIDR
+          - PublicSubnetCCIDR
+          - PrivateSubnetACIDR
+          - PrivateSubnetBCIDR
+          - PrivateSubnetCCIDR
+      - Label:
+          default: Security Configuration
+        Parameters:
+          - LogBucketStack
+          - LoggingFolderName
+    ParameterLabels:
+      VPCName: 
+        default: Name of the VPC
+      Environment:
+        default: Enter environment type for VPC
+      VPCCIDR:
+        default: VPC CIDR
+      PublicSubnetACIDR:
+        default: Public subnet A CIDR
+      PublicSubnetBCIDR:
+        default: Public subnet B CIDR
+      PublicSubnetCCIDR:
+        default: Public subnet C CIDR
+      PrivateSubnetACIDR:
+        default: Private subnet A CIDR
+      PrivateSubnetBCIDR:
+        default: Private subnet B CIDR
+      PrivateSubnetCCIDR:
+        default: Private subnet C CIDR
+      LogBucketStack:
+        default: Name of the S3 bucket logging stack
+      LoggingFolderName:
+        default: Enter confidential name of the logging folder
+
+Parameters:
+  VPCName:
+    Description: Enter the name of the VPC
+    Type: String
+  Environment:
+    Description: Enter environment type of the VPC
+    Type: String
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  VPCCIDR:
+    Description: CIDR block for the VPC
+    Type: String
+  PublicSubnetACIDR:
+    Description: CIDR block for the public subnet A
+    Type: String
+  PublicSubnetBCIDR:
+    Description: CIDR block for the public subnet B
+    Type: String
+  PublicSubnetCCIDR:
+    Description: CIDR block for the public subnet C
+    Type: String
+  PrivateSubnetACIDR:
+    Description: CIDR block for the private subnet A
+    Type: String
+  PrivateSubnetBCIDR:
+    Description: CIDR block for the private subnet B
+    Type: String
+  PrivateSubnetCCIDR:
+    Description: CIDR block for the private subnet C
+    Type: String
+  LogBucketStack:
+    Description: Name of the S3 bucket logging stack
+    Type: String
+  LoggingFolderName:
+    Description: Confidential name of the logging folder
+    Type: String
+    NoEcho: true
+
+Conditions:
+  IsDevelopment: !Equals [ !Ref Environment, dev]
+  IsStaging: !Equals [ !Ref Environment, staging]
+  IsProduction: !Equals [ !Ref Environment, prod]  
+
+Resources:
+
+  # VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-${VPCName}"
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Public subnets
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetACIDR
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnetA"
+        - Key: Environment
+          Value: !Ref Environment
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetBCIDR
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnetB"
+        - Key: Environment
+          Value: !Ref Environment
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetCCIDR
+      AvailabilityZone: !Select [ 2, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnetC"
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Private subnets
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetACIDR
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateSubnetA"
+        - Key: Environment
+          Value: !Ref Environment
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetBCIDR
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateSubnetB"
+        - Key: Environment
+          Value: !Ref Environment
+  PrivateSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetCCIDR
+      AvailabilityZone: !Select [ 2, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateSubnetC"
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # Internet Gateway
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGW
+
+  # Public Route tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicRouteTable"
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IGWAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+  PublicSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+  PublicSubnetCRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetC
+  
+  # NAT Gateways
+  NATGatewayA:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayAEIP.AllocationId
+      SubnetId: !Ref PublicSubnetA
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-NATGatewayA"
+        - Key: Environment
+          Value: !Ref Environment
+  NATGatewayB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayBEIP.AllocationId
+      SubnetId: !Ref PublicSubnetB
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-NATGatewayB"
+        - Key: Environment
+          Value: !Ref Environment
+  NATGatewayC:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayCEIP.AllocationId
+      SubnetId: !Ref PublicSubnetC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-NATGatewayC"
+        - Key: Environment
+          Value: !Ref Environment
+  NATGatewayAEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NATGatewayBEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NATGatewayCEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  
+  # Private route tables
+  PrivateRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableA"
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPrivateRouteA:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGatewayA
+  PrivateSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      SubnetId: !Ref PrivateSubnetA
+  PrivateRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableB"
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPrivateRouteB:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGatewayB
+  PrivateSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      SubnetId: !Ref PrivateSubnetB
+  PrivateRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableC"
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPrivateRouteC:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGatewayC
+  PrivateSubnetCRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      SubnetId: !Ref PrivateSubnetC
+
+  # VPC Flow Logs
+  FlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      LogDestinationType: s3
+      LogDestination:
+        Fn::Sub:
+          - "${BUCKET}/${VPCName}/${LoggingFolderName}/"
+          - BUCKET: !ImportValue "${LogBucketStack}-${Environment}-logging"
+      ResourceId: !Ref VPC 
+      ResourceType: VPC
+      TrafficType: ALL
+
+Outputs:
+  VPCID:
+    Description: VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
+  PublicSubnetA:
+    Description: A reference to the public subnet in the 1st AZ
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetA"
+  PublicSubnetB:
+    Description: A reference to the public subnet in the 2nd AZ
+    Value: !Ref PublicSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetB"
+  PublicSubnetC:
+    Description: A reference to the public subnet in the 3rd AZ
+    Value: !Ref PublicSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetC"
+  PrivateSubnetA:
+    Description: A reference to the public subnet in the 1st AZ
+    Value: !Ref PrivateSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetA"
+  PrivateSubnetB:
+    Description: A reference to the public subnet in the 2nd AZ
+    Value: !Ref PrivateSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetB"
+  PrivateSubnetC:
+    Description: A reference to the public subnet in the 3rd AZ
+    Value: !Ref PrivateSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetC"

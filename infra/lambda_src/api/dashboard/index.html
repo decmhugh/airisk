@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Risk Platform Home</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --surface: #fffaf2;
+      --ink: #1f1d1a;
+      --accent: #0f766e;
+      --accent-2: #b45309;
+      --muted: #6b6157;
+      --ok: #166534;
+      --warn: #9a3412;
+      --danger: #b91c1c;
+      --border: #d8ccbd;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 20% 0%, #fff7e8 0%, #f4f1ea 45%, #ebe5da 100%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px 56px;
+    }
+
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(130deg, #fffaf2 0%, #f9f2e9 50%, #f3ece2 100%);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 40px rgba(53, 38, 19, 0.08);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 980px) {
+      .grid {
+        grid-template-columns: 1.1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+      margin-bottom: 10px;
+    }
+
+    @media (min-width: 700px) {
+      .row.two { grid-template-columns: 1fr 1fr; }
+      .row.three { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 11px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary { background: var(--accent); color: #f8fffe; }
+    .secondary { background: #ded3c3; color: #2b241d; }
+    .danger { background: var(--danger); color: #fff6f6; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 9px 7px;
+      vertical-align: top;
+    }
+
+    th { color: #5d5348; }
+
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      display: none;
+    }
+
+    .status.ok { display: block; background: #dcfce7; color: var(--ok); }
+    .status.warn { display: block; background: #ffedd5; color: var(--warn); }
+    .status.error { display: block; background: #fee2e2; color: var(--danger); }
+
+    .small {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>AI Risk Platform Home</h1>
+      <p class="meta">Use this page to create, view, update, and delete AI systems through serverless API endpoints.</p>
+      <p class="meta" id="apiBaseLabel"></p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>System Editor (CRUD)</h2>
+        <div class="row two">
+          <div>
+            <label for="systemId">System ID (required for update/delete/get)</label>
+            <input id="systemId" placeholder="example: fraud-ai-01" />
+          </div>
+          <div>
+            <label for="name">Name</label>
+            <input id="name" placeholder="Fraud AI" />
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="owner">Owner</label>
+            <input id="owner" placeholder="Risk Dept" />
+          </div>
+          <div>
+            <label for="useCase">Use Case</label>
+            <input id="useCase" placeholder="Fraud detection" />
+          </div>
+        </div>
+
+        <div class="row three">
+          <div>
+            <label for="criticality">Criticality</label>
+            <select id="criticality">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+          <div>
+            <label for="riskScore">Risk Score</label>
+            <input id="riskScore" type="number" min="0" max="100" value="45" />
+          </div>
+          <div>
+            <label for="statusValue">Status</label>
+            <select id="statusValue">
+              <option selected>Monitoring</option>
+              <option>Open</option>
+              <option>Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="createBtn">Create</button>
+          <button class="secondary" id="getBtn">Get One</button>
+          <button class="secondary" id="updateBtn">Update</button>
+          <button class="danger" id="deleteBtn">Delete</button>
+          <button class="secondary" id="listBtn">Refresh List</button>
+        </div>
+        <div class="status" id="statusBox"></div>
+      </article>
+
+      <article class="card">
+        <h2>API Result Preview</h2>
+        <pre id="result" class="small" style="white-space: pre-wrap; margin: 0;">No API calls yet.</pre>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 16px;">
+      <h2>Systems</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>System ID</th>
+            <th>Name</th>
+            <th>Owner</th>
+            <th>Use Case</th>
+            <th>Criticality</th>
+            <th>Risk Score</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="systemsTableBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    function resolveApiBase() {
+      const segments = window.location.pathname.split("/").filter(Boolean);
+      const stagePrefix = segments.length > 0 ? `/${segments[0]}` : "";
+      return `${window.location.origin}${stagePrefix}`;
+    }
+
+    const apiBase = resolveApiBase();
+    const apiBaseLabel = document.getElementById("apiBaseLabel");
+    apiBaseLabel.textContent = `API Base: ${apiBase}`;
+
+    const statusBox = document.getElementById("statusBox");
+    const result = document.getElementById("result");
+    const systemsTableBody = document.getElementById("systemsTableBody");
+
+    const field = (id) => document.getElementById(id).value.trim();
+
+    function showStatus(type, message) {
+      statusBox.className = `status ${type}`;
+      statusBox.textContent = message;
+    }
+
+    function payloadFromForm() {
+      return {
+        system_id: field("systemId") || undefined,
+        name: field("name"),
+        owner: field("owner"),
+        use_case: field("useCase"),
+        criticality: field("criticality"),
+        risk_score: Number(field("riskScore") || 0),
+        status: field("statusValue")
+      };
+    }
+
+    async function apiCall(method, path, body) {
+      const response = await fetch(`${apiBase}${path}`, {
+        method,
+        headers: { "content-type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      const text = await response.text();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = { raw: text };
+      }
+
+      result.textContent = JSON.stringify(parsed, null, 2);
+
+      if (!response.ok) {
+        throw new Error(parsed.error || `Request failed with status ${response.status}`);
+      }
+
+      return parsed;
+    }
+
+    function renderSystems(systems) {
+      systemsTableBody.innerHTML = "";
+      for (const s of systems) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${s.system_id || ""}</td>
+          <td>${s.name || ""}</td>
+          <td>${s.owner || ""}</td>
+          <td>${s.use_case || ""}</td>
+          <td>${s.criticality || ""}</td>
+          <td>${s.risk_score ?? ""}</td>
+          <td>${s.status || ""}</td>
+        `;
+        systemsTableBody.appendChild(tr);
+      }
+    }
+
+    async function listSystems() {
+      try {
+        const data = await apiCall("GET", "/systems");
+        renderSystems(data.systems || []);
+        showStatus("ok", `Loaded ${data.systems?.length || 0} systems.`);
+      } catch (err) {
+        showStatus("error", err.message);
+      }
+    }
+
+    async function getOne() {
+      const id = field("systemId");
+      if (!id) {
+        showStatus("warn", "System ID is required for Get One.");
+        return;
+      }
+      try {
+        const data = await apiCall("GET", `/systems/${encodeURIComponent(id)}`);
+        const s = data.system || {};
+        document.getElementById("name").value = s.name || "";
+        document.getElementById("owner").value = s.owner || "";
+        document.getElementById("useCase").value = s.use_case || "";
+        document.getElementById("criticality").value = s.criticality || "Medium";
+        document.getElementById("riskScore").value = s.risk_score ?? 0;
+        document.getElementById("statusValue").value = s.status || "Monitoring";
+        showStatus("ok", `Loaded system ${id}.`);
+      } catch (err) {
+        showStatus("error", err.message);
+      }
+    }
+
+    async function createSystem() {
+      try {
+        const data = await apiCall("POST", "/systems", payloadFromForm());
+        document.getElementById("systemId").value = data.system?.system_id || field("systemId");
+        showStatus("ok", "System created.");
+        await listSystems();
+      } catch (err) {
+        showStatus("error", err.message);
+      }
+    }
+
+    async function updateSystem() {
+      const id = field("systemId");
+      if (!id) {
+        showStatus("warn", "System ID is required for Update.");
+        return;
+      }
+      try {
+        await apiCall("PUT", `/systems/${encodeURIComponent(id)}`, payloadFromForm());
+        showStatus("ok", `System ${id} updated.`);
+        await listSystems();
+      } catch (err) {
+        showStatus("error", err.message);
+      }
+    }
+
+    async function deleteSystem() {
+      const id = field("systemId");
+      if (!id) {
+        showStatus("warn", "System ID is required for Delete.");
+        return;
+      }
+      try {
+        await apiCall("DELETE", `/systems/${encodeURIComponent(id)}`);
+        showStatus("ok", `System ${id} deleted.`);
+        await listSystems();
+      } catch (err) {
+        showStatus("error", err.message);
+      }
+    }
+
+    document.getElementById("createBtn").addEventListener("click", createSystem);
+    document.getElementById("getBtn").addEventListener("click", getOne);
+    document.getElementById("updateBtn").addEventListener("click", updateSystem);
+    document.getElementById("deleteBtn").addEventListener("click", deleteSystem);
+    document.getElementById("listBtn").addEventListener("click", listSystems);
+
+    listSystems();
+  </script>
+</body>
+</html>

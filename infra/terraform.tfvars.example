@@ -1,0 +1,27 @@
+project_name                  = "ai-risk-platform"
+environment                   = "dev"
+aws_region                    = "eu-west-1"
+api_stage_name                = "v1"
+
+# Set to your preferred Bedrock model available in your region.
+bedrock_model_id              = "anthropic.claude-3-haiku-20240307-v1:0"
+
+# Optional: secrets manager ARN storing JSON like:
+# {"endpoint":"https://api.vendor.com/v1/analyze","api_key":"<token>"}
+third_party_api_secret_arn    = ""
+
+automation_schedule_expression = "rate(6 hours)"
+allowed_origins                = ["*"]
+
+# Bedrock agent names to monitor on each automation run.
+bedrock_agent_names = [
+	"dmh-serv-agent-v3",
+	"agent_vedrancafe",
+	"agent-tf-quick"
+]
+
+# Enable CloudTrail management event capture for Bedrock agent change auditing.
+enable_cloudtrail = true
+
+# Optional: provide a dedicated bucket name for CloudTrail logs.
+# cloudtrail_s3_bucket_name = ""
