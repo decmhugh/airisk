@@ -132,7 +132,8 @@ def lambda_handler(event, _context):
             return obj.isoformat()
         raise TypeError(f"Type {type(obj)} not serializable")
 
-    html = html.replace("__LOG_DATA__", json.dumps(payload, default=_ser))
+    json_str = json.dumps(payload, default=_ser).replace("</", "<\\/")
+    html = html.replace("__LOG_DATA__", json_str)
 
     return {
         "statusCode": 200,

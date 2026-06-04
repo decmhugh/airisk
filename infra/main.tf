@@ -76,6 +76,14 @@ locals {
       route_key = "GET /bedrock-logs"
       handler   = "bedrock_logs.index.lambda_handler"
     }
+    bedrock_summary = {
+      route_key = "GET /bedrock-summary"
+      handler   = "bedrock_summary.index.lambda_handler"
+    }
+    agent_core_logs = {
+      route_key = "GET /agent-core-logs"
+      handler   = "agent_core_logs.index.lambda_handler"
+    }
   }
 }
 
@@ -95,6 +103,12 @@ data "archive_file" "change_capture_lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/lambda_src/change_capture"
   output_path = "${path.module}/lambda_src/change_capture.zip"
+}
+
+data "archive_file" "log_summariser_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda_src/log_summariser"
+  output_path = "${path.module}/lambda_src/log_summariser.zip"
 }
 
 data "aws_caller_identity" "current" {}
@@ -138,6 +152,19 @@ resource "aws_dynamodb_table" "insurance_triggers" {
 
   attribute {
     name = "trigger_id"
+    type = "S"
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_dynamodb_table" "bedrock_daily_summary" {
+  name         = "${local.name_prefix}-bedrock-daily-summary"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "date"
+
+  attribute {
+    name = "date"
     type = "S"
   }
 
@@ -223,7 +250,8 @@ data "aws_iam_policy_document" "platform_policy_doc" {
       aws_dynamodb_table.incidents.arn,
       aws_dynamodb_table.insurance_triggers.arn,
       aws_dynamodb_table.agent_monitoring.arn,
-      "${aws_dynamodb_table.agent_monitoring.arn}/index/*"
+      "${aws_dynamodb_table.agent_monitoring.arn}/index/*",
+      aws_dynamodb_table.bedrock_daily_summary.arn,
     ]
   }
 
@@ -292,6 +320,8 @@ resource "aws_lambda_function" "api_endpoint" {
       AWS_ACCOUNT_REGION     = var.aws_region
       LOG_BUCKET             = var.log_bucket
       LOG_PREFIX             = var.log_prefix
+      AGENT_CORE_LOG_PREFIX  = var.agent_core_log_prefix
+      DAILY_SUMMARY_TABLE    = aws_dynamodb_table.bedrock_daily_summary.name
     }
   }
 
@@ -319,6 +349,48 @@ resource "aws_lambda_function" "automation_worker" {
   }
 
   tags = local.common_tags
+}
+
+resource "aws_lambda_function" "log_summariser" {
+  function_name    = "${local.name_prefix}-log-summariser"
+  role             = aws_iam_role.lambda_exec.arn
+  runtime          = "python3.12"
+  handler          = "index.lambda_handler"
+  filename         = data.archive_file.log_summariser_lambda_zip.output_path
+  source_code_hash = data.archive_file.log_summariser_lambda_zip.output_base64sha256
+  timeout          = 300
+  memory_size      = 512
+
+  environment {
+    variables = {
+      LOG_BUCKET          = var.log_bucket
+      LOG_PREFIX          = var.log_prefix
+      DAILY_SUMMARY_TABLE = aws_dynamodb_table.bedrock_daily_summary.name
+    }
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_event_rule" "log_summariser_schedule" {
+  name                = "${local.name_prefix}-log-summariser-schedule"
+  description         = "Runs Bedrock log summariser every hour"
+  schedule_expression = "rate(1 hour)"
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_event_target" "log_summariser_target" {
+  rule      = aws_cloudwatch_event_rule.log_summariser_schedule.name
+  target_id = "log-summariser"
+  arn       = aws_lambda_function.log_summariser.arn
+}
+
+resource "aws_lambda_permission" "allow_eventbridge_invoke_log_summariser" {
+  statement_id  = "AllowInvokeFromEventBridgeLogSummariser"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.log_summariser.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.log_summariser_schedule.arn
 }
 
 resource "aws_lambda_function" "change_capture" {
@@ -494,8 +566,13 @@ data "aws_iam_policy_document" "cloudtrail_s3_policy" {
 
 resource "aws_s3_bucket_policy" "cloudtrail_logs" {
   count  = var.enable_cloudtrail ? 1 : 0
-  bucket = local.cloudtrail_bucket_name
+  bucket = var.cloudtrail_s3_bucket_name != "" ? var.cloudtrail_s3_bucket_name : aws_s3_bucket.cloudtrail_logs[0].id
   policy = data.aws_iam_policy_document.cloudtrail_s3_policy[0].json
+
+  depends_on = [
+    aws_s3_bucket.cloudtrail_logs,
+    aws_s3_bucket_public_access_block.cloudtrail_logs,
+  ]
 }
 
 resource "aws_cloudtrail" "bedrock_audit" {

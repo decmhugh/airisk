@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bedrock Daily Summary</title>
+  <style>
+    :root {
+      --bg: #f4f1ea; --surface: #fffaf2; --ink: #1f1d1a;
+      --accent: #0f766e; --accent-2: #b45309; --muted: #6b6157;
+      --ok: #166534; --ok-bg: #dcfce7;
+      --danger: #b91c1c; --danger-bg: #fef2f2;
+      --warn: #9a3412; --warn-bg: #fff7ed;
+      --purple: #6d28d9; --purple-bg: #f5f3ff;
+      --border: #d8ccbd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI","Trebuchet MS",sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 20% 0%,#fff7e8 0%,#f4f1ea 45%,#ebe5da 100%);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1300px; margin: 0 auto; padding: 24px 16px 56px; }
+
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(130deg,#fffaf2 0%,#f9f2e9 50%,#f3ece2 100%);
+      border-radius: 18px; padding: 20px 24px;
+      box-shadow: 0 18px 40px rgba(53,38,19,.08);
+      margin-bottom: 18px;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .hero h1 { margin: 0 0 5px; font-size: clamp(1.3rem,2.5vw,1.9rem); }
+    .hero p  { margin: 0; color: var(--muted); font-size: 0.88rem; }
+    .hero-meta { display:flex; flex-direction:column; align-items:flex-end; gap:5px; font-size:0.8rem; color:var(--muted); }
+
+    /* Today hero stats */
+    .today-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .stat-card .stat-val { font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat-card .stat-val.danger { color: var(--danger); }
+    .stat-card .stat-val.ok { color: var(--ok); }
+    .stat-card .stat-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 3px; }
+    .stat-card .stat-sub { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+
+    /* Section header */
+    .section-hdr {
+      font-size: 0.85rem; font-weight: 700; color: var(--muted);
+      letter-spacing: .06em; text-transform: uppercase;
+      margin: 22px 0 10px;
+    }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      background: #f3ede4; color: var(--muted); font-weight: 600;
+      text-align: left; padding: 9px 12px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+      position: sticky; top: 0; z-index: 1;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: #faf6f0; }
+    tr.detail-row td { background: #fdf9f4; padding: 0; }
+    .mono { font-family: "Cascadia Code","Consolas",monospace; font-size: 0.82rem; }
+
+    .pill {
+      display: inline-block; border-radius: 999px; padding: 2px 9px;
+      font: 500 0.72rem "Segoe UI",sans-serif; white-space: nowrap;
+    }
+    .pill-ok      { background: var(--ok-bg);     color: var(--ok); }
+    .pill-danger  { background: var(--danger-bg); color: var(--danger); }
+    .pill-warn    { background: var(--warn-bg);   color: var(--warn); }
+    .pill-muted   { background: #f0ede8;          color: var(--muted); }
+    .pill-accent  { background: #ccfbf1;          color: #134e4a; }
+
+    /* Error rate bar */
+    .err-bar-wrap { display:flex; align-items:center; gap:6px; }
+    .err-bar-bg { height:6px; border-radius:3px; background:#e8e1d8; flex:1; min-width:60px; }
+    .err-bar-fill { height:6px; border-radius:3px; background: var(--danger); }
+    .err-pct { font-size:0.75rem; color:var(--muted); white-space:nowrap; }
+
+    /* Tok bar */
+    .tok-bar { display:inline-flex; gap:4px; align-items:center; font-size:0.78rem; white-space:nowrap; }
+    .tok-in  { color: var(--accent); font-weight:600; }
+    .tok-out { color: var(--accent-2); font-weight:600; }
+
+    /* Expand button */
+    .exp-btn {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      padding: 2px 7px; cursor: pointer; font-size: 0.72rem; color: var(--muted);
+    }
+    .exp-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Detail panel */
+    .detail-panel { padding: 16px 18px; display:flex; gap:24px; flex-wrap:wrap; }
+    .detail-section { flex:1; min-width:260px; }
+    .detail-section h4 { margin:0 0 8px; font-size:0.82rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .breakdown-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .breakdown-table th { background:#f3ede4; padding:5px 8px; text-align:left; font-weight:600; color:var(--muted); }
+    .breakdown-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
+
+    /* Trend sparkline area */
+    .trend-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:18px; }
+    .trend-section h2 { margin:0 0 14px; font-size:1rem; }
+    .spark-wrap { display:flex; align-items:flex-end; gap:4px; height:60px; }
+    .spark-bar {
+      flex:1; background:var(--accent); border-radius:3px 3px 0 0;
+      min-width:12px; cursor:pointer; opacity:.8; transition:opacity .1s;
+      position:relative;
+    }
+    .spark-bar:hover { opacity:1; }
+    .spark-bar .tip {
+      display:none; position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%);
+      background:#1e1e2e; color:#cdd6f4; border-radius:6px; padding:4px 8px;
+      font:0.72rem "Cascadia Code",monospace; white-space:nowrap; z-index:10;
+    }
+    .spark-bar:hover .tip { display:block; }
+    .spark-labels { display:flex; gap:4px; margin-top:4px; }
+    .spark-label { flex:1; text-align:center; font-size:0.65rem; color:var(--muted); white-space:nowrap; overflow:hidden; }
+
+    .empty { text-align:center; padding:48px; color:var(--muted); }
+    .warn-box {
+      background: var(--warn-bg); border:1px solid #fdba74;
+      border-radius:10px; padding:10px 14px; color:var(--warn);
+      font-size:0.85rem; margin-bottom:14px;
+    }
+
+    /* Monthly bar chart */
+    .mo-bar-chart { display:flex; align-items:flex-end; gap:6px; height:88px; margin-bottom:6px; }
+    .mo-bar {
+      flex:1; border-radius:4px 4px 0 0; min-width:24px;
+      background: var(--accent); cursor:pointer; opacity:.85;
+      transition: opacity .15s; position:relative;
+    }
+    .mo-bar:hover { opacity:1; }
+    .mo-bar .tip {
+      display:none; position:absolute; bottom:calc(100% + 4px); left:50%;
+      transform:translateX(-50%); background:#1e1e2e; color:#cdd6f4;
+      border-radius:6px; padding:4px 8px; font:0.72rem "Cascadia Code",monospace;
+      white-space:nowrap; z-index:10; pointer-events:none;
+    }
+    .mo-bar:hover .tip { display:block; }
+    .mo-bar-labels { display:flex; gap:6px; }
+    .mo-bar-label { flex:1; text-align:center; font-size:0.68rem; color:var(--muted); }
+
+    /* Model Pie Chart */
+    .chart-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-bottom: 18px;
+    }
+    .chart-section h2 { margin: 0 0 16px; font-size: 1rem; }
+    .pie-wrap { display:flex; gap:32px; align-items:center; flex-wrap:wrap; }
+    .pie-legend { display:flex; flex-direction:column; gap:5px; flex:1; min-width:180px; }
+    .pie-legend-item { display:flex; align-items:center; gap:8px; font-size:0.8rem; }
+    .pie-swatch { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+    .pie-legend-label { color:var(--ink); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem; }
+    .pie-legend-pct { font-weight:700; color:var(--accent); white-space:nowrap; font-size:0.8rem; }
+    .pie-legend-val { color:var(--muted); font-size:0.73rem; white-space:nowrap; }
+
+    /* Monthly comparison table */
+    .mo-cmp-table { width:100%; border-collapse:collapse; font-size:0.83rem; }
+    .mo-cmp-table th { background:#f3ede4; color:var(--muted); font-weight:600; padding:8px 12px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .mo-cmp-table td { padding:8px 12px; border-bottom:1px solid var(--border); }
+    .mo-cmp-table tr:hover td { background:#faf6f0; }
+    .delta-up   { color: var(--ok);     font-weight:600; }
+    .delta-down { color: var(--danger); font-weight:600; }
+
+    @media(max-width:640px) { .hero{flex-direction:column} .hero-meta{align-items:flex-start} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <h1>&#128202; Bedrock Daily Summary</h1>
+      <p id="hero-sub">Loading...</p>
+    </div>
+    <div class="hero-meta">
+      <span id="hero-fetched"></span>
+      <a href="bedrock-logs" style="color:var(--accent);font-size:0.8rem">&#128196; View Raw Logs &rarr;</a>
+    </div>
+  </div>
+
+  <div id="main-content"></div>
+
+</div>
+<script>
+(function () {
+  const D = __SUMMARY_DATA__;
+  const PIE_COLORS = [
+    '#0f766e','#b45309','#6d28d9','#dc2626','#0369a1',
+    '#9a3412','#4f46e5','#059669','#d97706','#7c3aed',
+    '#0891b2','#be185d','#84cc16','#f97316','#6366f1',
+  ];
+
+  // USD per 1M tokens [input, output]
+  const COST_PER_1M = {
+    'anthropic.claude-3-5-sonnet-20241022-v2:0': [3.00, 15.00],
+    'anthropic.claude-3-5-sonnet-20240620-v1:0': [3.00, 15.00],
+    'anthropic.claude-3-5-haiku-20241022-v1:0':  [0.80,  4.00],
+    'anthropic.claude-3-sonnet-20240229-v1:0':   [3.00, 15.00],
+    'anthropic.claude-3-haiku-20240307-v1:0':    [0.25,  1.25],
+    'anthropic.claude-3-opus-20240229-v1:0':     [15.00,75.00],
+    'anthropic.claude-instant-v1':               [0.80,  2.40],
+    'anthropic.claude-v2:1':                     [8.00, 24.00],
+    'anthropic.claude-v2':                       [8.00, 24.00],
+    'amazon.nova-micro-v1:0':                    [0.035, 0.14],
+    'amazon.nova-lite-v1:0':                     [0.06,  0.24],
+    'amazon.nova-pro-v1:0':                      [0.80,  3.20],
+    'amazon.titan-text-express-v1':              [0.20,  0.60],
+    'amazon.titan-text-lite-v1':                 [0.15,  0.20],
+    'amazon.titan-text-premier-v1:0':            [0.50,  1.50],
+    'amazon.titan-embed-text-v1':                [0.10,  0.00],
+    'amazon.titan-embed-text-v2:0':              [0.02,  0.00],
+    'meta.llama3-8b-instruct-v1:0':              [0.30,  0.60],
+    'meta.llama3-70b-instruct-v1:0':             [2.65,  3.50],
+    'meta.llama3-1-8b-instruct-v1:0':            [0.22,  0.22],
+    'meta.llama3-1-70b-instruct-v1:0':           [0.72,  0.72],
+    'meta.llama3-2-1b-instruct-v1:0':            [0.10,  0.10],
+    'meta.llama3-2-3b-instruct-v1:0':            [0.15,  0.15],
+    'mistral.mistral-7b-instruct-v0:2':          [0.15,  0.20],
+    'mistral.mixtral-8x7b-instruct-v0:1':        [0.45,  0.70],
+    'mistral.mistral-large-2402-v1:0':           [4.00, 12.00],
+    'mistral.mistral-small-2402-v1:0':           [1.00,  3.00],
+    'cohere.command-r-v1:0':                     [0.50,  1.50],
+    'cohere.command-r-plus-v1:0':                [3.00, 15.00],
+    'cohere.embed-english-v3':                   [0.10,  0.00],
+    'cohere.embed-multilingual-v3':              [0.10,  0.00],
+    'ai21.j2-ultra-v1':                          [18.80,18.80],
+    'ai21.j2-mid-v1':                            [12.50,12.50],
+    'ai21.jamba-instruct-v1:0':                  [0.50,  0.70],
+    // Named provisioned / inference-profile agents (Nova Lite rates)
+    '77x7m2nb6605':                              [0.06,  0.24],  // Cafe Ole
+    '634379ydrl9w':                              [0.06,  0.24],  // Cafe Vedran
+  };
+
+  function modelCost(key, inputTok, outputTok) {
+    let clean = key;
+    for (const pfx of ['us.', 'eu.', 'ap.']) {
+      if (key.startsWith(pfx)) { clean = key.slice(pfx.length); break; }
+    }
+    const r = COST_PER_1M[clean] || COST_PER_1M[key];
+    if (!r) return null;
+    return (inputTok * r[0] + outputTok * r[1]) / 1_000_000;
+  }
+
+  function fmtCost(v) {
+    if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
+    if (v === 0) return '$0.00';
+    if (v < 0.0001) return '<$0.0001';
+    if (v < 0.01)   return '$' + v.toFixed(4);
+    if (v < 1)      return '$' + v.toFixed(3);
+    return '$' + v.toFixed(2);
+  }
+
+  function esc(v) {
+    if (v == null) return '';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmt(n) { return (n ?? 0).toLocaleString(); }
+
+  document.getElementById('hero-fetched').textContent =
+    'Updated: ' + (D.fetched_at ? new Date(D.fetched_at).toLocaleString() : '—');
+
+  const summaries = D.summaries || [];
+  const content = document.getElementById('main-content');
+
+  if (!summaries.length) {
+    document.getElementById('hero-sub').textContent = 'No summary data yet — the scheduler runs hourly.';
+    content.innerHTML = '<div class="empty">&#9203; No data yet. The log summariser Lambda will populate this table on its next run.</div>';
+    return;
+  }
+
+  const today = summaries[0];
+  document.getElementById('hero-sub').textContent =
+    `Today (${esc(today.date)}): ${fmt(today.total_invocations)} invocations · ${fmt(today.total_tokens)} tokens · ${today.errors || 0} errors`;
+
+  // ── Compute monthly aggregates & all-time model totals ────────────────────
+  const byMonthMap = {};
+  const allModelTotals  = {};
+  const allModelNames   = {};   // model_key → friendly name
+  const allModelTokens  = {};   // model_key → { input, output }
+  summaries.forEach(s => {
+    const mo = (s.date || '').slice(0, 7);
+    if (!byMonthMap[mo]) byMonthMap[mo] = { month: mo, total_invocations: 0, errors: 0, input_tokens: 0, output_tokens: 0, total_tokens: 0, by_model: {} };
+    const m = byMonthMap[mo];
+    m.total_invocations += s.total_invocations || 0;
+    m.errors            += s.errors            || 0;
+    m.input_tokens      += s.input_tokens      || 0;
+    m.output_tokens     += s.output_tokens     || 0;
+    m.total_tokens      += s.total_tokens      || 0;
+    Object.entries(s.by_model || {}).forEach(([k, v]) => {
+      if (!m.by_model[k]) m.by_model[k] = { invocations: 0, errors: 0, input_tokens: 0, output_tokens: 0 };
+      m.by_model[k].invocations   += v.invocations   || 0;
+      m.by_model[k].errors        += v.errors        || 0;
+      m.by_model[k].input_tokens  += v.input_tokens  || 0;
+      m.by_model[k].output_tokens += v.output_tokens || 0;
+      allModelTotals[k] = (allModelTotals[k] || 0) + (v.invocations || 0);
+      // collect the friendly name — last seen wins (names are stable)
+      if (s.model_names && s.model_names[k]) allModelNames[k] = s.model_names[k];
+      // accumulate all-time tokens per model for cost calc
+      if (!allModelTokens[k]) allModelTokens[k] = { input: 0, output: 0 };
+      allModelTokens[k].input  += v.input_tokens  || 0;
+      allModelTokens[k].output += v.output_tokens || 0;
+    });
+  });
+  const months = Object.values(byMonthMap).sort((a, b) => b.month.localeCompare(a.month));
+
+  // ── This Month hero stats ─────────────────────────────────────────────────
+  const thisMonth   = months[0] || { total_invocations: 0, errors: 0, input_tokens: 0, output_tokens: 0, total_tokens: 0, month: today.date.slice(0, 7) };
+  const successPct  = thisMonth.total_invocations
+    ? (((thisMonth.total_invocations - thisMonth.errors) / thisMonth.total_invocations) * 100).toFixed(1)
+    : '100.0';
+  const thisMonthCost = Object.entries(thisMonth.by_model || {}).reduce((sum, [k, v]) => {
+    const c = modelCost(k, v.input_tokens || 0, v.output_tokens || 0);
+    return c !== null ? sum + c : sum;
+  }, 0);
+  const thisMonthCostKnown = Object.keys(thisMonth.by_model || {}).some(k => modelCost(k, 1, 0) !== null);
+
+  content.innerHTML = `
+    <div class="section-hdr">&#128197; This Month — ${esc(thisMonth.month)}</div>
+    <div class="today-stats">
+      ${statCard(fmt(thisMonth.total_invocations), 'Invocations', '')}
+      ${statCard(fmt(thisMonth.errors || 0),        'Errors',      thisMonth.errors > 0 ? 'danger' : '')}
+      ${statCard(successPct + '%',                  'Success Rate', thisMonth.errors === 0 ? 'ok' : '')}
+      ${statCard(fmt(thisMonth.input_tokens || 0),  'Input Tokens', '')}
+      ${statCard(fmt(thisMonth.output_tokens || 0), 'Output Tokens', '')}
+      ${statCard(fmt(thisMonth.total_tokens || 0),  'Total Tokens', '')}
+      ${thisMonthCostKnown ? statCard((thisMonthCost === 0 ? '$0.00' : (thisMonthCost < 0.01 ? '$' + thisMonthCost.toFixed(4) : '$' + thisMonthCost.toFixed(2))) + (Object.keys(thisMonth.by_model||{}).some(k=>modelCost(k,1,0)===null)?'*':''), 'Est. Cost (USD)', '') : ''}
+    </div>`;
+
+  // ── Model Distribution Pie Chart (all-time) ───────────────────────────────
+  const modelEntries = Object.entries(allModelTotals).sort((a, b) => b[1] - a[1]);
+  if (modelEntries.length) {
+    const totalInv = modelEntries.reduce((s, [, v]) => s + v, 0);
+    const pieData  = modelEntries.map(([key, value], i) => ({
+      label: allModelNames[key] || key,
+      key, value, color: PIE_COLORS[i % PIE_COLORS.length],
+      pct: totalInv ? ((value / totalInv) * 100).toFixed(1) : '0.0',
+    }));
+    content.innerHTML += `
+      <div class="chart-section">
+        <h2>&#127812; Model Distribution — All-Time Invocations</h2>
+        <div class="pie-wrap">
+          ${buildPieSvg(pieData, totalInv)}
+          <div class="pie-legend">
+            ${pieData.map(d => `
+              <div class="pie-legend-item">
+                <div class="pie-swatch" style="background:${d.color}"></div>
+                <span class="pie-legend-label" title="${esc(d.label)}">${esc(d.label)}</span>
+                <span class="pie-legend-pct">${d.pct}%</span>
+                <span class="pie-legend-val">${fmt(d.value)}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Cost Breakdown by Model (all-time) ───────────────────────────────────
+  const costRows = Object.entries(allModelTokens)
+    .map(([k, t]) => ({ key: k, name: allModelNames[k] || k, input: t.input, output: t.output, cost: modelCost(k, t.input, t.output) }))
+    .sort((a, b) => (b.cost ?? -1) - (a.cost ?? -1));
+  if (costRows.length) {
+    const totalKnownCost = costRows.reduce((s, r) => r.cost !== null ? s + r.cost : s, 0);
+    const hasUnknown = costRows.some(r => r.cost === null);
+    const costTableRows = costRows.map(r => {
+      const pct = (totalKnownCost > 0 && r.cost !== null) ? ((r.cost / totalKnownCost) * 100).toFixed(1) + '%' : '—';
+      return `<tr>
+        <td title="${esc(r.key)}">${esc(r.name)}</td>
+        <td class="mono tok-in">${fmt(r.input)}</td>
+        <td class="mono tok-out">${fmt(r.output)}</td>
+        <td class="mono" style="font-weight:600">${fmtCost(r.cost)}</td>
+        <td class="mono" style="color:var(--muted)">${pct}</td>
+      </tr>`;
+    }).join('');
+    content.innerHTML += `
+      <div class="section-hdr">&#128181; Cost Breakdown by Model (All-Time)</div>
+      <div class="table-wrap" style="margin-bottom:6px">
+        <table class="mo-cmp-table">
+          <thead><tr><th>Model</th><th>Input Tokens</th><th>Output Tokens</th><th>Est. Cost (USD)</th><th>% of Total</th></tr></thead>
+          <tbody>${costTableRows}</tbody>
+          <tfoot><tr style="background:#f3ede4;font-weight:700">
+            <td>Total (known)</td><td></td><td></td>
+            <td class="mono">${fmtCost(totalKnownCost)}</td><td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+      ${hasUnknown ? '<p style="font-size:0.75rem;color:var(--muted);margin:4px 0 16px">* Provisioned throughput and custom inference profile costs are not included — check your AWS Cost Explorer for actuals.</p>' : ''}`;
+  }
+
+  // ── Trend sparkline (last 14 days) ────────────────────────────────────────
+  const trend = summaries.slice(0, 14).reverse();
+  if (trend.length > 1) {
+    const maxInv = Math.max(...trend.map(s => s.total_invocations || 0), 1);
+    let bars = '', labels = '';
+    trend.forEach(s => {
+      const h = Math.max(4, Math.round(((s.total_invocations || 0) / maxInv) * 56));
+      const errCol = s.errors > 0 ? 'background:var(--accent-2)' : '';
+      bars   += `<div class="spark-bar" style="height:${h}px;${errCol}"><div class="tip">${esc(s.date)}<br>${fmt(s.total_invocations)} inv · ${fmt(s.total_tokens)} tok${s.errors ? '<br>' + s.errors + ' errors' : ''}</div></div>`;
+      labels += `<div class="spark-label">${esc((s.date || '').slice(5))}</div>`;
+    });
+    content.innerHTML += `
+      <div class="trend-section">
+        <h2>&#128200; Invocations — last ${trend.length} days <span style="font-weight:400;font-size:0.8rem;color:var(--muted)"> — orange = errors</span></h2>
+        <div class="spark-wrap">${bars}</div>
+        <div class="spark-labels">${labels}</div>
+      </div>`;
+  }
+
+  // ── Monthly Comparison ────────────────────────────────────────────────────
+  if (months.length) {
+    const maxMoInv = Math.max(...months.map(m => m.total_invocations), 1);
+    let moBars = '', moLabels = '';
+    [...months].reverse().forEach(m => {
+      const h = Math.max(4, Math.round((m.total_invocations / maxMoInv) * 80));
+      moBars   += `<div class="mo-bar" style="height:${h}px"><div class="tip">${esc(m.month)}<br>${fmt(m.total_invocations)} inv<br>${fmt(m.total_tokens)} tok${m.errors ? '<br>' + m.errors + ' err' : ''}</div></div>`;
+      moLabels += `<div class="mo-bar-label">${esc(m.month.slice(5))}</div>`;
+    });
+
+    let moTableRows = '';
+    months.forEach((m, i) => {
+      const prev = months[i + 1];
+      const invDelta  = prev ? m.total_invocations - prev.total_invocations : null;
+      const invDeltaPct = (prev && prev.total_invocations) ? ((invDelta / prev.total_invocations) * 100).toFixed(1) : null;
+      const tokDelta  = prev ? m.total_tokens - prev.total_tokens : null;
+      const tokDeltaPct = (prev && prev.total_tokens) ? ((tokDelta / prev.total_tokens) * 100).toFixed(1) : null;
+
+      const invDeltaHtml = invDelta === null ? '—'
+        : invDelta > 0  ? `<span class="delta-up">&#9650; +${fmt(invDelta)} (+${invDeltaPct}%)</span>`
+        : invDelta < 0  ? `<span class="delta-down">&#9660; ${fmt(invDelta)} (${invDeltaPct}%)</span>`
+        : '<span style="color:var(--muted)">&#8212;</span>';
+
+      const tokDeltaHtml = tokDelta === null ? '—'
+        : tokDelta > 0  ? `<span class="delta-up">+${tokDeltaPct}%</span>`
+        : tokDelta < 0  ? `<span class="delta-down">${tokDeltaPct}%</span>`
+        : '—';
+
+      const errRate = m.total_invocations ? ((m.errors / m.total_invocations) * 100).toFixed(1) : '0.0';
+      const moCost = Object.entries(m.by_model || {}).reduce((sum, [k, v]) => {
+        const c = modelCost(k, v.input_tokens || 0, v.output_tokens || 0);
+        return c !== null ? sum + c : sum;
+      }, 0);
+      const moCostHasKnown = Object.keys(m.by_model || {}).some(k => modelCost(k, 1, 0) !== null);
+      moTableRows += `<tr>
+        <td class="mono" style="font-weight:700">${esc(m.month)}</td>
+        <td class="mono">${fmt(m.total_invocations)}</td>
+        <td>${invDeltaHtml}</td>
+        <td class="mono tok-in">${fmt(m.input_tokens)}</td>
+        <td class="mono tok-out">${fmt(m.output_tokens)}</td>
+        <td class="mono">${fmt(m.total_tokens)}</td>
+        <td>${tokDeltaHtml}</td>
+        <td class="mono" style="font-weight:600">${moCostHasKnown ? fmtCost(moCost) : '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${m.errors > 0 ? `<span class="pill pill-danger">${m.errors}</span>` : '<span class="pill pill-ok">0</span>'}</td>
+        <td class="mono">${errRate}%</td>
+      </tr>`;
+    });
+
+    content.innerHTML += `
+      <div class="section-hdr">&#128197; Monthly Summary</div>
+      <div class="trend-section" style="margin-bottom:10px">
+        <h2>&#128200; Monthly Invocations</h2>
+        <div class="mo-bar-chart">${moBars}</div>
+        <div class="mo-bar-labels">${moLabels}</div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:18px">
+        <table class="mo-cmp-table">
+          <thead><tr>
+            <th>Month</th><th>Invocations</th><th>vs Prev Month</th>
+            <th>Input Tokens</th><th>Output Tokens</th><th>Total Tokens</th>
+            <th>Token Change</th><th>Est. Cost</th><th>Errors</th><th>Error Rate</th>
+          </tr></thead>
+          <tbody>${moTableRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── Today table ───────────────────────────────────────────────────────────
+  content.innerHTML += `
+    <div class="section-hdr">&#128197; Today — ${esc(today.date)}</div>
+    <div class="table-wrap">
+    <table id="summary-table">
+      <thead><tr>
+        <th></th><th>Date</th><th>Invocations</th>
+        <th>Error Rate</th><th>Input Tokens</th><th>Output Tokens</th>
+        <th>Total Tokens</th><th>Updated</th>
+      </tr></thead>
+      <tbody id="summary-body"></tbody>
+    </table></div>`;
+
+  const tbody = document.getElementById('summary-body');
+  const s = today;
+  const errRate   = s.total_invocations ? (s.errors / s.total_invocations) : 0;
+  const errPctStr = (errRate * 100).toFixed(1);
+  const errBarW   = Math.min(100, errRate * 100).toFixed(1);
+  const errHtml   = s.errors > 0
+    ? `<div class="err-bar-wrap"><div class="err-bar-bg"><div class="err-bar-fill" style="width:${errBarW}%"></div></div><span class="err-pct">${errPctStr}%</span></div>`
+    : `<span class="pill pill-ok">&#10003; 0%</span>`;
+  const updAt = s.updated_at ? new Date(s.updated_at).toLocaleString() : '—';
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr class="data-row">
+      <td><button class="exp-btn" onclick="toggleDetail(0)">&#9660;</button></td>
+      <td class="mono" style="font-weight:700">${esc(s.date)} <span class="pill pill-accent">today</span></td>
+      <td class="mono">${fmt(s.total_invocations || 0)}</td>
+      <td>${errHtml}</td>
+      <td class="mono tok-in">${fmt(s.input_tokens || 0)}</td>
+      <td class="mono tok-out">${fmt(s.output_tokens || 0)}</td>
+      <td class="mono">${fmt(s.total_tokens || 0)}</td>
+      <td style="font-size:0.78rem;color:var(--muted)">${esc(updAt)}</td>
+    </tr>
+    <tr id="detail-0" class="detail-row" style="display:none">
+      <td colspan="8"><div class="detail-panel" id="detail-content-0"></div></td>
+    </tr>`);
+
+  window._summaries = summaries;
+
+  window.toggleDetail = function(i) {
+    const row = document.getElementById(`detail-${i}`);
+    if (!row) return;
+    const open = row.style.display !== 'none';
+    row.style.display = open ? 'none' : '';
+    const panel = document.getElementById(`detail-content-${i}`);
+    if (!open && panel && !panel._rendered) {
+      panel._rendered = true;
+      panel.innerHTML = buildDetail(window._summaries[i]);
+    }
+  };
+
+  function buildDetail(s) {
+    let html = '';
+    const byModel = s.by_model || {};
+    const modelKeys = Object.keys(byModel).sort((a, b) => (byModel[b].invocations || 0) - (byModel[a].invocations || 0));
+    if (modelKeys.length) {
+      html += `<div class="detail-section"><h4>By Model</h4><table class="breakdown-table"><thead><tr><th>Model</th><th>Invocations</th><th>Errors</th><th>In Tokens</th><th>Out Tokens</th></tr></thead><tbody>`;
+      modelKeys.forEach(m => {
+        const v = byModel[m];
+        const mName = (s.model_names && s.model_names[m]) || allModelNames[m] || m;
+        html += `<tr><td class="mono" style="font-size:0.75rem" title="${esc(m)}">${esc(mName)}</td><td>${fmt(v.invocations)}</td><td>${v.errors > 0 ? `<span class="pill pill-danger">${v.errors}</span>` : '—'}</td><td class="tok-in">${fmt(v.input_tokens)}</td><td class="tok-out">${fmt(v.output_tokens)}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+    const byOp = s.by_operation || {};
+    const opKeys = Object.keys(byOp).sort((a, b) => (byOp[b].invocations || 0) - (byOp[a].invocations || 0));
+    if (opKeys.length) {
+      html += `<div class="detail-section"><h4>By Operation</h4><table class="breakdown-table"><thead><tr><th>Operation</th><th>Invocations</th><th>Errors</th></tr></thead><tbody>`;
+      opKeys.forEach(op => {
+        const v = byOp[op];
+        html += `<tr><td class="mono">${esc(op)}</td><td>${fmt(v.invocations)}</td><td>${v.errors > 0 ? `<span class="pill pill-danger">${v.errors}</span>` : '—'}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+    if (!html) html = '<span style="color:var(--muted);font-size:0.85rem">No breakdown data.</span>';
+    return html;
+  }
+
+  function buildPieSvg(data, total) {
+    if (!total || !data.length) return '';
+    const W = 220, cx = 110, cy = 110, r = 95, ri = 42;
+    let angle = -Math.PI / 2;
+    const paths = data.map(d => {
+      const sweep = (d.value / total) * 2 * Math.PI;
+      const x1o = cx + r  * Math.cos(angle), y1o = cy + r  * Math.sin(angle);
+      const x1i = cx + ri * Math.cos(angle), y1i = cy + ri * Math.sin(angle);
+      angle += sweep;
+      const x2o = cx + r  * Math.cos(angle), y2o = cy + r  * Math.sin(angle);
+      const x2i = cx + ri * Math.cos(angle), y2i = cy + ri * Math.sin(angle);
+      const large = sweep > Math.PI ? 1 : 0;
+      return `<path d="M${x1i.toFixed(2)},${y1i.toFixed(2)} L${x1o.toFixed(2)},${y1o.toFixed(2)} A${r},${r} 0 ${large},1 ${x2o.toFixed(2)},${y2o.toFixed(2)} L${x2i.toFixed(2)},${y2i.toFixed(2)} A${ri},${ri} 0 ${large},0 ${x1i.toFixed(2)},${y1i.toFixed(2)} Z" fill="${d.color}" stroke="#fff" stroke-width="1.5"><title>${esc(d.label)}: ${fmt(d.value)} (${d.pct}%)</title></path>`;
+    });
+    return `<svg width="${W}" height="${W}" viewBox="0 0 ${W} ${W}" style="flex-shrink:0">${paths.join('')}</svg>`;
+  }
+
+  function statCard(val, label, cls) {
+    return `<div class="stat-card"><div class="stat-val ${esc(cls)}">${esc(String(val))}</div><div class="stat-lbl">${esc(label)}</div></div>`;
+  }
+
+})();
+</script>
+</body>
+</html>

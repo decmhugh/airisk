@@ -3,7 +3,8 @@ param(
     [string]$Environment = "dev",
     [string]$Region = "eu-west-1",
     [string]$StateKey = "airisk/dev/terraform.tfstate",
-    [string]$CloudtrailBucket = "ai-risk-platform-prod-cloudtrail-586794455900",
+    [string]$CloudtrailBucket = "",
+    [switch]$EmptyCloudtrailBucket,
     [switch]$AutoApprove
 )
 
@@ -20,4 +21,5 @@ if (-not (Test-Path $infraDeployScript)) {
     -Region $Region `
     -StateKey $StateKey `
     -CloudtrailBucket $CloudtrailBucket `
+    -EmptyCloudtrailBucket:$EmptyCloudtrailBucket `
     -AutoApprove:$AutoApprove

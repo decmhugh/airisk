@@ -79,3 +79,9 @@ variable "log_prefix" {
   type        = string
   default     = "airisk/AWSLogs/586794455900/BedrockModelInvocationLogs/eu-west-1"
 }
+
+variable "agent_core_log_prefix" {
+  description = "S3 key prefix for Bedrock AgentCore runtime application logs (without trailing slash)"
+  type        = string
+  default     = "AWSLogs/586794455900/bedrockagentcoreruntimeapplicationlogs"
+}

@@ -3,7 +3,8 @@ param(
     [string]$Environment = "dev",
     [string]$Region = "eu-west-1",
     [string]$StateKey = "airisk/dev/terraform.tfstate",
-    [string]$CloudtrailBucket = "ai-risk-platform-prod-cloudtrail-586794455900",
+    [string]$CloudtrailBucket = "",
+    [switch]$EmptyCloudtrailBucket,
     [switch]$AutoApprove
 )
 
@@ -13,6 +14,13 @@ Set-Location $PSScriptRoot
 
 Write-Host "Starting Terraform deployment..." -ForegroundColor Cyan
 Write-Host "Bucket: $BackendBucket | Region: $Region | Env: $Environment | StateKey: $StateKey"
+
+if ($EmptyCloudtrailBucket -and $CloudtrailBucket -ne "") {
+    Write-Host "Emptying CloudTrail bucket: $CloudtrailBucket" -ForegroundColor Yellow
+    aws s3 rm "s3://$CloudtrailBucket" --recursive --region $Region
+    if ($LASTEXITCODE -ne 0) { throw "aws s3 rm failed with exit code $LASTEXITCODE" }
+    Write-Host "Bucket emptied." -ForegroundColor Green
+}
 
 terraform fmt -recursive
 if ($LASTEXITCODE -ne 0) { throw "terraform fmt failed with exit code $LASTEXITCODE" }

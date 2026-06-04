@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Core Logs</title>
+  <style>
+    :root {
+      --bg: #f4f1ea; --surface: #fffaf2; --ink: #1f1d1a;
+      --accent: #6d28d9; --accent-2: #b45309; --muted: #6b6157;
+      --ok: #166534; --ok-bg: #dcfce7;
+      --danger: #b91c1c; --danger-bg: #fef2f2;
+      --warn: #9a3412; --warn-bg: #fff7ed;
+      --purple: #6d28d9; --purple-bg: #f5f3ff;
+      --border: #d8ccbd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI","Trebuchet MS",sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 20% 0%,#f5f3ff 0%,#f4f1ea 45%,#ebe5da 100%);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px 16px 56px; }
+
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(130deg,#f5f3ff 0%,#f9f2e9 50%,#f3ece2 100%);
+      border-radius: 18px; padding: 20px 24px;
+      box-shadow: 0 18px 40px rgba(53,38,19,.08);
+      margin-bottom: 18px;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .hero h1 { margin: 0 0 5px; font-size: clamp(1.3rem,2.5vw,1.9rem); }
+    .hero p  { margin: 0; color: var(--muted); font-size: 0.88rem; }
+    .hero-meta { display:flex; flex-direction:column; align-items:flex-end; gap:5px; font-size:0.8rem; color:var(--muted); }
+
+    .controls {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px;
+      margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+    }
+    .ctrl-group { display:flex; flex-direction:column; gap:4px; }
+    .ctrl-group label { font-size:0.78rem; color:var(--muted); font-weight:600; }
+    .ctrl-group input, .ctrl-group select {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; font: inherit; font-size: 0.88rem;
+      background: #fff; color: var(--ink); min-width: 140px;
+    }
+    .btn {
+      border: 0; border-radius: 10px; padding: 9px 18px;
+      font: 600 0.85rem "Segoe UI",sans-serif;
+      cursor: pointer; transition: transform .12s, opacity .12s; white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); opacity:.92; }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-secondary { background: #ded3c3; color: #2b241d; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .stat-card .stat-val { font-size: 1.6rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat-card .stat-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    .browse-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-bottom: 18px;
+    }
+    .browse-panel h2 { margin: 0 0 14px; font-size: 1rem; }
+    .cal-year { margin-bottom: 16px; }
+    .cal-year h3 { margin: 0 0 8px; font-size: 0.9rem; color: var(--muted); }
+    .cal-month { margin-bottom: 10px; padding-left: 12px; border-left: 2px solid var(--border); }
+    .cal-month h4 { margin: 0 0 6px; font-size: 0.82rem; color: var(--accent-2); }
+    .day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      display: inline-block; border-radius: 8px; padding: 4px 12px;
+      font: 600 0.78rem "Segoe UI",sans-serif; cursor: pointer;
+      border: 1px solid var(--border); background: #fff; color: var(--ink);
+      text-decoration: none; transition: background .12s, border-color .12s;
+    }
+    .chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .hour-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+    .hour-chip {
+      border-radius: 8px; padding: 6px 14px;
+      font: 600 0.82rem "Segoe UI",sans-serif; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+      text-decoration: none; transition: background .12s, border-color .12s;
+    }
+    .hour-chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .filter-bar {
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;
+    }
+    .filter-bar input, .filter-bar select {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 10px; font: inherit; font-size: 0.85rem;
+      background: #fff; color: var(--ink);
+    }
+    .filter-bar input { min-width: 200px; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      background: #ede9f6; color: var(--muted); font-weight: 600;
+      text-align: left; padding: 9px 10px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+      position: sticky; top: 0; z-index: 1;
+    }
+    td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: #f5f3ff; }
+    tr.detail-row td { background: #fdf9f4; padding: 0; }
+    .mono { font-family: "Cascadia Code","Consolas",monospace; font-size: 0.78rem; }
+
+    .pill {
+      display: inline-block; border-radius: 999px; padding: 2px 9px;
+      font: 500 0.72rem "Segoe UI",sans-serif; white-space: nowrap;
+    }
+    .pill-ok     { background: var(--ok-bg);     color: var(--ok); }
+    .pill-danger { background: var(--danger-bg); color: var(--danger); }
+    .pill-purple { background: var(--purple-bg); color: var(--purple); }
+    .pill-muted  { background: #f0ede8;          color: var(--muted); }
+    .pill-warn   { background: var(--warn-bg);   color: var(--warn); }
+
+    .exp-btn {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      padding: 2px 7px; cursor: pointer; font-size: 0.72rem; color: var(--muted);
+    }
+    .exp-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .detail-panel { padding: 14px 16px; }
+    .json-block {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 10px;
+      padding: 14px; font: 0.78rem "Cascadia Code","Consolas",monospace;
+      overflow-x: auto; white-space: pre; line-height: 1.6;
+      max-height: 400px; overflow-y: auto;
+    }
+
+    .warn-box {
+      background: var(--warn-bg); border: 1px solid #fdba74;
+      border-radius: 10px; padding: 10px 14px; color: var(--warn);
+      font-size: 0.85rem; margin-bottom: 14px;
+    }
+    .empty { text-align:center; padding:40px; color:var(--muted); }
+
+    @media(max-width:640px) { .hero{flex-direction:column} .hero-meta{align-items:flex-start} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <h1>&#129302; Agent Core Logs</h1>
+      <p id="hero-sub">Loading...</p>
+    </div>
+    <div class="hero-meta">
+      <span id="hero-bucket"></span>
+      <span id="hero-fetched"></span>
+      <a href="bedrock-logs" style="color:var(--accent);font-size:0.8rem">&#128196; Invocation Logs &rarr;</a>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>S3 Bucket</label>
+      <input id="inp-bucket" type="text" placeholder="dmh-kb-docs">
+    </div>
+    <div class="ctrl-group">
+      <label>Log Prefix</label>
+      <input id="inp-prefix" type="text" style="min-width:380px"
+             placeholder="AWSLogs/586794455900/bedrockagentcoreruntimeapplicationlogs">
+    </div>
+    <div class="ctrl-group">
+      <label>Date</label>
+      <input id="inp-date" type="date">
+    </div>
+    <div class="ctrl-group">
+      <label>Hour (UTC)</label>
+      <select id="inp-hour">
+        <option value="">All hours (browse)</option>
+        <option value="00">00</option><option value="01">01</option>
+        <option value="02">02</option><option value="03">03</option>
+        <option value="04">04</option><option value="05">05</option>
+        <option value="06">06</option><option value="07">07</option>
+        <option value="08">08</option><option value="09">09</option>
+        <option value="10">10</option><option value="11">11</option>
+        <option value="12">12</option><option value="13">13</option>
+        <option value="14">14</option><option value="15">15</option>
+        <option value="16">16</option><option value="17">17</option>
+        <option value="18">18</option><option value="19">19</option>
+        <option value="20">20</option><option value="21">21</option>
+        <option value="22">22</option><option value="23">23</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="applyNav()">&#128269; Load Logs</button>
+    <button class="btn btn-secondary" onclick="resetNav()">&#8635; Browse</button>
+  </div>
+
+  <div id="main-content"></div>
+
+</div>
+<script>
+(function () {
+  const D = __LOG_DATA__;
+
+  function esc(v) {
+    if (v == null) return '';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('inp-bucket').value = D.bucket || '';
+  document.getElementById('inp-prefix').value = D.prefix_base || '';
+  document.getElementById('inp-date').value   = D.date || '';
+  const hourSel = document.getElementById('inp-hour');
+  if (D.hour) { for (const o of hourSel.options) if (o.value === D.hour) o.selected = true; }
+
+  document.getElementById('hero-bucket').textContent  = '&#128190; ' + (D.bucket || '');
+  document.getElementById('hero-fetched').textContent = 'Fetched: ' + (D.fetched_at ? new Date(D.fetched_at).toLocaleString() : '');
+
+  function navUrl(params) {
+    const u = new URLSearchParams();
+    if (params.bucket && params.bucket !== D.bucket) u.set('bucket', params.bucket);
+    if (params.prefix && params.prefix !== D.prefix_base) u.set('prefix', params.prefix);
+    // carry sub_prefix forward unless explicitly overridden
+    const sp = (params.sub_prefix !== undefined) ? params.sub_prefix : (D.sub_prefix || '');
+    if (sp) u.set('sub_prefix', sp);
+    if (params.date) u.set('date', params.date);
+    if (params.hour) u.set('hour', params.hour);
+    return '?' + u.toString();
+  }
+
+  window.applyNav = function() {
+    location.href = navUrl({
+      bucket:     document.getElementById('inp-bucket').value.trim(),
+      prefix:     document.getElementById('inp-prefix').value.trim(),
+      sub_prefix: '',  // reset stream drill-down when prefix changes manually
+      date:       document.getElementById('inp-date').value,
+      hour:       document.getElementById('inp-hour').value,
+    });
+  };
+  window.resetNav = function() { location.href = '?'; };
+
+  const contentEl = document.getElementById('main-content');
+
+  // Update hero subtitle with current stream context
+  if (D.sub_prefix) {
+    document.getElementById('hero-sub').textContent = '&#128450; ' + D.sub_prefix;
+  }
+
+  if (D.date && D.hour) {
+    renderLogs();
+  } else if (D.browse && D.browse.level === 'hours') {
+    renderHourBrowse();
+  } else {
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    if (!D.sub_prefix) {
+      document.getElementById('hero-sub').textContent = 'Select a log stream or date.';
+    }
+    const browse = D.browse || {};
+
+    if (browse.error) {
+      contentEl.innerHTML = `<div class="warn-box">&#9888; S3 error: ${esc(browse.error)}</div>`;
+      return;
+    }
+
+    // Intermediate stream level — path has extra segments before YYYY/MM/DD
+    if (browse.level === 'streams') {
+      const parent = D.sub_prefix || '';
+      let html = `<div class="browse-panel"><h2>&#128450; Select Log Stream</h2>`;
+      if (parent) html += `<p style="font-size:0.82rem;color:var(--muted);margin:0 0 10px">Current path: <code>${esc(parent)}</code></p>`;
+      html += '<div class="day-chips">';
+      (browse.streams || []).forEach(s => {
+        const sp = parent ? `${parent}/${s}` : s;
+        html += `<a class="chip" href="${esc(navUrl({sub_prefix: sp}))}">${esc(s)}</a>`;
+      });
+      html += '</div>';
+      if (parent) {
+        const up = parent.includes('/') ? parent.slice(0, parent.lastIndexOf('/')) : '';
+        html += `<p style="margin-top:12px"><a href="${esc(navUrl({sub_prefix: up}))}" style="font-size:0.82rem;color:var(--accent)">&#8593; Up one level</a></p>`;
+      }
+      html += '</div>';
+      contentEl.innerHTML = html;
+      return;
+    }
+
+    // Calendar level
+    const tree  = browse.tree || {};
+    const years = Object.keys(tree).sort().reverse();
+    if (!years.length) {
+      contentEl.innerHTML = '<div class="browse-panel"><div class="empty">&#128204; No log files found under this prefix.</div></div>';
+      return;
+    }
+    let html = '<div class="browse-panel"><h2>&#128197; Available Log Dates</h2>';
+    years.forEach(yr => {
+      html += `<div class="cal-year"><h3>${yr}</h3>`;
+      Object.keys(tree[yr]).sort().forEach(mo => {
+        html += `<div class="cal-month"><h4>${yr}-${mo}</h4><div class="day-chips">`;
+        tree[yr][mo].forEach(dd => {
+          const ds = `${yr}-${mo}-${dd}`;
+          html += `<a class="chip" href="${esc(navUrl({date:ds}))}">${dd}</a>`;
+        });
+        html += '</div></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    contentEl.innerHTML = html;
+  }
+
+  function renderHourBrowse() {
+    const browse = D.browse || {};
+    document.getElementById('hero-sub').textContent = `Select an hour for ${esc(D.date)}`;
+    let html = `<h3 style="margin:0 0 10px;font-size:0.95rem;color:var(--muted)">&#128336; Available hours on ${esc(D.date)} (UTC)</h3><div class="hour-bar">`;
+    const hours = browse.hours || [];
+    if (!hours.length) {
+      html += '<span style="color:var(--muted);font-size:0.88rem">No log files found for this date.</span>';
+    } else {
+      hours.forEach(h => {
+        html += `<a class="hour-chip" href="${esc(navUrl({date:D.date,hour:h}))}">${h}:00</a>`;
+      });
+    }
+    html += '</div>';
+    contentEl.innerHTML = html;
+  }
+
+  function renderLogs() {
+    const records = D.records || [];
+    document.getElementById('hero-sub').textContent =
+      `${D.date} ${D.hour}:xx UTC  ·  ${records.length} record${records.length !== 1 ? 's' : ''}`;
+
+    // Aggregate stats
+    let errors = 0;
+    const agentIds = new Set(), sessionIds = new Set(), eventTypes = new Set();
+    records.forEach(r => {
+      if (r._error || r.errorCode || r.errorMessage) errors++;
+      if (r.agentId)      agentIds.add(r.agentId);
+      if (r.sessionId)    sessionIds.add(r.sessionId);
+      // event type varies by log schema: eventType, event, traceType
+      const et = r.eventType || r.event || r.traceType || r.type;
+      if (et) eventTypes.add(et);
+    });
+
+    let html = '';
+    if (D.truncated) html += `<div class="warn-box">&#9888; Results truncated at ${records.length} records. Narrow to a specific hour.</div>`;
+
+    html += `<div class="stats">
+      ${sc(records.length, 'Records')}
+      ${sc(agentIds.size,  'Agents')}
+      ${sc(sessionIds.size,'Sessions')}
+      ${sc(errors,         'Errors', errors > 0 ? 'color:var(--danger)' : '')}
+      ${sc(eventTypes.size,'Event Types')}
+    </div>`;
+
+    // Filter bar
+    const etList = [...eventTypes].sort();
+    const agList = [...agentIds].sort();
+    html += `<div class="filter-bar">
+      <input id="flt-text" type="text" placeholder="Filter any field…" oninput="applyFilter()">
+      <select id="flt-event" onchange="applyFilter()">
+        <option value="">All event types</option>
+        ${etList.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}
+      </select>
+      <select id="flt-agent" onchange="applyFilter()">
+        <option value="">All agents</option>
+        ${agList.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('')}
+      </select>
+    </div>`;
+
+    html += `<div class="table-wrap">
+      <table id="log-table">
+        <thead><tr>
+          <th></th>
+          <th>Timestamp</th>
+          <th>Agent</th>
+          <th>Session</th>
+          <th>Event Type</th>
+          <th>Request ID</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>`;
+
+    contentEl.innerHTML = html;
+
+    window._records = records;
+    buildRows(records);
+
+    window.applyFilter = function() {
+      const txt   = document.getElementById('flt-text').value.toLowerCase();
+      const evFlt = document.getElementById('flt-event').value;
+      const agFlt = document.getElementById('flt-agent').value;
+      const filtered = window._records.filter(r => {
+        const et = r.eventType || r.event || r.traceType || r.type || '';
+        if (evFlt && et !== evFlt) return false;
+        if (agFlt && r.agentId !== agFlt) return false;
+        if (txt && !JSON.stringify(r).toLowerCase().includes(txt)) return false;
+        return true;
+      });
+      buildRows(filtered);
+    };
+  }
+
+  function buildRows(records) {
+    const tbody = document.getElementById('log-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!records.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No records match the current filter.</td></tr>';
+      return;
+    }
+    records.forEach((r, i) => {
+      const ts    = r.timestamp || r.eventTime || r.time || '';
+      const tsStr = ts ? new Date(ts).toLocaleTimeString() : '—';
+      const agId  = r.agentId   || '—';
+      const sesId = r.sessionId ? r.sessionId.slice(-8) + '…' : '—';
+      const et    = r.eventType || r.event || r.traceType || r.type || '—';
+      const reqId = r.requestId || r.traceId || '—';
+      const isErr = !!(r._error || r.errorCode || r.errorMessage);
+      const statusHtml = isErr
+        ? `<span class="pill pill-danger">&#10008; error</span>`
+        : `<span class="pill pill-ok">&#10003; ok</span>`;
+      const etPill = et !== '—'
+        ? `<span class="pill pill-purple">${esc(et)}</span>`
+        : '<span class="pill pill-muted">—</span>';
+
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr class="data-row" data-i="${i}">
+          <td><button class="exp-btn" onclick="toggleDetail(${i})">&#9660;</button></td>
+          <td class="mono">${esc(tsStr)}</td>
+          <td class="mono" style="font-size:0.75rem" title="${esc(agId)}">${esc(agId.length > 16 ? agId.slice(-12) + '…' : agId)}</td>
+          <td class="mono" style="font-size:0.75rem">${esc(sesId)}</td>
+          <td>${etPill}</td>
+          <td class="mono" style="font-size:0.72rem;color:var(--muted)" title="${esc(reqId)}">${esc(reqId.length > 16 ? reqId.slice(0,14) + '…' : reqId)}</td>
+          <td>${statusHtml}</td>
+        </tr>
+        <tr id="detail-${i}" class="detail-row" style="display:none">
+          <td colspan="7"><div class="detail-panel" id="detail-content-${i}"></div></td>
+        </tr>`);
+    });
+
+    window._visibleRecords = records;
+  }
+
+  window.toggleDetail = function(i) {
+    const row   = document.getElementById(`detail-${i}`);
+    if (!row) return;
+    const open  = row.style.display !== 'none';
+    row.style.display = open ? 'none' : '';
+    const panel = document.getElementById(`detail-content-${i}`);
+    if (!open && panel && !panel._rendered) {
+      panel._rendered = true;
+      const r = (window._visibleRecords || window._records)[i];
+      panel.innerHTML = `<div class="json-block">${esc(JSON.stringify(r, null, 2))}</div>`;
+    }
+  };
+
+  function sc(val, label, style) {
+    return `<div class="stat-card"><div class="stat-val" style="${style||''}">${val}</div><div class="stat-lbl">${label}</div></div>`;
+  }
+
+})();
+</script>
+</body>
+</html>

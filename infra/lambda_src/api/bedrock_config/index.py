@@ -123,7 +123,7 @@ def lambda_handler(_event, _context):
     with open(html_path, "r", encoding="utf-8") as fh:
         html = fh.read()
 
-    html = html.replace("__BEDROCK_DATA__", json.dumps(data, default=_serialize))
+    html = html.replace("__BEDROCK_DATA__", json.dumps(data, default=_serialize).replace("</", "<\\/"))
 
     return {
         "statusCode": 200,
